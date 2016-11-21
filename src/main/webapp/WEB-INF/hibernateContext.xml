@@ -1,0 +1,54 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+	   xmlns:p="http://www.springframework.org/schema/p" 
+	   xmlns:util="http://www.springframework.org/schema/util"
+	
+       xsi:schemaLocation="http://www.springframework.org/schema/beans	http://www.springframework.org/schema/beans/spring-beans.xsd
+            http://www.springframework.org/schema/tx	http://www.springframework.org/schema/tx/spring-tx.xsd
+			http://www.springframework.org/schema/util	http://www.springframework.org/schema/util/spring-util.xsd">
+            
+
+    <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="locations">
+            <list>
+                <value>classpath:hibernate.properties</value>
+            </list>
+        </property>
+    </bean>
+    
+    <tx:annotation-driven transaction-manager="transactionManager" />
+
+	<bean id="mysqlJpaAdapter"
+		class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter"
+		p:databasePlatform="${HIBERNATE_DIALECT}" p:showSql="${HIBERNATE_SHOW_SQL}" />
+		
+
+  	<bean id="entityManagerFactory"
+		class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean" depends-on="flywayForMainDB"
+		p:packagesToScan="kkg.fabH.Entity" p:dataSource-ref="sdsDB"
+		p:jpaPropertyMap-ref="jpaPropertyMap" p:jpaVendorAdapter-ref="mysqlJpaAdapter" />
+
+
+	<util:map id="jpaPropertyMap">
+		<entry key="hibernate.show_sql" value="false" />
+		<entry key="hibernate.format_sql" value="false" />
+		<entry key="show_sql" value="false" />
+		<entry key="format_sql" value="false" />
+	</util:map>
+    
+    <bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+        <property name="entityManagerFactory" ref="entityManagerFactory"/>
+    </bean>
+    
+	<bean id="flywayForMainDB" class="com.googlecode.flyway.core.Flyway" init-method="migrate" lazy-init="false" depends-on="sdsDB">
+   			<property name="dataSource" ref="sdsDB" />
+   			<property name="locations" value="sqlForMainDB" />
+	</bean>	
+	
+	<bean id="sdsDB" class="org.apache.commons.dbcp2.BasicDataSource"
+			p:driverClassName="${jdbc.driver}" p:url="${jdbc.url}"
+			p:username="${jdbc.user}" p:password="${jdbc.password}"
+			p:initialSize="${jdbc.maxIdle}" p:maxTotal="${jdbc.maxActive}">
+	</bean>		
+</beans>
